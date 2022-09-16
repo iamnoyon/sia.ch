@@ -6,6 +6,9 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import load_workbook
 import os.path
 from datetime import datetime
+from Crypto.Cipher import AES
+from base64 import b64decode
+import re
 
 zip_lang = 'zip_language.xlsx'
 df = pd.read_excel(zip_lang)
@@ -28,6 +31,21 @@ if file_exists:
     fe_flag = 1
 else:
     fe_flag = 0
+
+
+def pad(data, ks):
+    pad_len = (ks - (len(data) % ks)) % ks 
+    return data + (b'\x00' * pad_len)
+
+def kdf(pwd, keySize): 
+    if keySize != 16 and keySize != 24 and keySize != 32:
+        raise ValueError("Wrong keysize") 
+    keyPadded = pwd[:keySize] if len(pwd) >= keySize else pad(pwd, keySize)
+    aes = AES.new(key=keyPadded, mode=AES.MODE_ECB) 
+    key = aes.encrypt(keyPadded[:16])
+    if keySize > 16:
+        key = (key + key)[:keySize]
+    return key
 
 def get_indv(page,df,fe_flag,n):
     ids = n
@@ -66,7 +84,36 @@ def get_indv(page,df,fe_flag,n):
                     office_sector = ''
 
                 #***implement later
-                contact = indv_office_doc.xpath('//table//tr[4]/td[2]/div/text()')
+                data_contact = indv_office_doc.xpath('//@data-contact')[0]
+                data_secret = indv_office_doc.xpath('//@data-secr')[0]
+                #print(data_contact[0])
+                #print(data_secret[0])
+
+                ciphertext = b64decode(data_contact)
+                nc = ciphertext[:8]
+                data = ciphertext[8:]
+
+                keySize = 32
+                pwd = data_secret #from data-secr
+                key = kdf(pwd.encode('utf-8'), keySize) 
+                aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
+                res = aes.decrypt(data)
+                result = res.decode('utf-8')
+                tel = result[0:13]
+                email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
+                if email:
+                    email = email[0]
+                else:
+                    email=''
+                fax=result[44:57]
+                website = re.search('_blank">(.*)</a><br />', result)
+                if website:
+                    website = website.group(1)
+                else:
+                    website=''
+                #print(result, tel)
+
+                contact=[tel,email,fax,website]
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
                 wdf = pd.DataFrame(columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "CONTACT", "JOB", "SECTOR", "GROUP", "SECTION"])
@@ -75,7 +122,7 @@ def get_indv(page,df,fe_flag,n):
                 dts = now.strftime("%d/%m/%Y %H:%M")
                 mo_wdf = pd.DataFrame([[ids+1,'',ids+1,dts]], columns=["ID","MEMBER_ID", "OFFICE_ID", "COLLECTED_AT"])
 
-                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], office_indv_zip, contact[0],contact[0],contact[0],contact[0],office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
+                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], office_indv_zip, contact[1],contact[0],contact[2],contact[3],office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
                 #with pd.ExcelWriter("member.xlsx") as writer:
                     #wdf.to_excel(writer, sheet_name='member', index=False)
                 #print(wdf)
@@ -124,7 +171,36 @@ def get_indv(page,df,fe_flag,n):
                     office_sector = ''
 
                 #***implement later
-                contact = indv_office_doc.xpath('//table//tr[4]/td[2]/div/text()')
+                data_contact = indv_office_doc.xpath('//@data-contact')[0]
+                data_secret = indv_office_doc.xpath('//@data-secr')[0]
+                #print(data_contact[0])
+                #print(data_secret[0])
+
+                ciphertext = b64decode(data_contact)
+                nc = ciphertext[:8]
+                data = ciphertext[8:]
+
+                keySize = 32
+                pwd = data_secret #from data-secr
+                key = kdf(pwd.encode('utf-8'), keySize) 
+                aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
+                res = aes.decrypt(data)
+                result = res.decode('utf-8')
+                tel = result[0:13]
+                email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
+                if email:
+                    email = email[0]
+                else:
+                    email=''
+                fax=result[44:57]
+                website = re.search('_blank">(.*)</a><br />', result)
+                if website:
+                    website = website.group(1)
+                else:
+                    website=''
+                #print(result, tel)
+
+                contact=[tel,email,fax,website]
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
@@ -134,7 +210,7 @@ def get_indv(page,df,fe_flag,n):
                 dts = now.strftime("%d/%m/%Y %H:%M")
                 mo_wdf = pd.DataFrame([[ids+1,'',ids+1,dts]], columns=["ID","MEMBER_ID", "OFFICE_ID", "COLLECTED_AT"])
 
-                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], '', contact[0],contact[0],contact[0],contact[0],office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
+                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], '', contact[0],contact[1],contact[2],contact[3],office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
                 #with pd.ExcelWriter("member.xlsx") as writer:
                     #wdf.to_excel(writer, sheet_name='member', index=False)
                 #print(wdf)

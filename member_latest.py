@@ -1,3 +1,4 @@
+from operator import concat
 from pprint import pprint
 import requests
 import lxml.html
@@ -6,6 +7,9 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import load_workbook
 import os.path
 from datetime import datetime
+from Crypto.Cipher import AES
+from base64 import b64decode
+import re
 
 zip_lang = 'zip_language.xlsx'
 df = pd.read_excel(zip_lang)
@@ -29,6 +33,20 @@ if file_exists:
     fe_flag = 1
 else:
     fe_flag = 0
+
+def pad(data, ks):
+    pad_len = (ks - (len(data) % ks)) % ks 
+    return data + (b'\x00' * pad_len)
+
+def kdf(pwd, keySize): 
+    if keySize != 16 and keySize != 24 and keySize != 32:
+        raise ValueError("Wrong keysize") 
+    keyPadded = pwd[:keySize] if len(pwd) >= keySize else pad(pwd, keySize)
+    aes = AES.new(key=keyPadded, mode=AES.MODE_ECB) 
+    key = aes.encrypt(keyPadded[:16])
+    if keySize > 16:
+        key = (key + key)[:keySize]
+    return key
 
 def get_indv(page,df,fe_flag,n):
     ids = n
@@ -59,7 +77,36 @@ def get_indv(page,df,fe_flag,n):
                 join_indv_full_address_clean = " ".join(indv_full_address_clean)
                 
                 #***implement later
-                contact = indv_doc.xpath('//table//tr[4]/td[2]/div/text()')
+                data_contact = indv_doc.xpath('//@data-contact')[0]
+                data_secret = indv_doc.xpath('//@data-secr')[0]
+                #print(data_contact[0])
+                #print(data_secret[0])
+
+                ciphertext = b64decode(data_contact)
+                nc = ciphertext[:8]
+                data = ciphertext[8:]
+
+                keySize = 32
+                pwd = data_secret #from data-secr
+                key = kdf(pwd.encode('utf-8'), keySize) 
+                aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
+                res = aes.decrypt(data)
+                result = res.decode('utf-8')
+                tel = result[0:13]
+                email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
+                if email:
+                    email = email[0]
+                else:
+                    email=''
+                fax=result[44:57]
+                website = re.search('_blank">(.*)</a><br />', result)
+                if website:
+                    website = website.group(1)
+                else:
+                    website=''
+                #print(result, tel)
+
+                contact=[email,tel,fax,website]
 
                 job = indv_doc.xpath('//table//tr[6]/td[2]/text()')
                 if job:
@@ -86,7 +133,7 @@ def get_indv(page,df,fe_flag,n):
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
-                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, contact[0], contact[0], contact[0], contact[0], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
+                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, contact[0], contact[1], contact[2], contact[2], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
 
                 now = datetime.now()
                 dts = now.strftime("%d/%m/%Y %H:%M")
@@ -136,7 +183,37 @@ def get_indv(page,df,fe_flag,n):
                 join_indv_full_address_clean = " ".join(indv_full_address_clean)
 
                 #***implement later
-                contact = indv_doc.xpath('//table//tr[4]/td[2]/div/text()')
+                data_contact = indv_doc.xpath('//@data-contact')[0]
+                data_secret = indv_doc.xpath('//@data-secr')[0]
+                #print(data_contact[0])
+                #print(data_secret[0])
+
+                ciphertext = b64decode(data_contact)
+                nc = ciphertext[:8]
+                data = ciphertext[8:]
+
+                keySize = 32
+                pwd = data_secret #from data-secr
+                key = kdf(pwd.encode('utf-8'), keySize) 
+                aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
+                res = aes.decrypt(data)
+                result = res.decode('utf-8')
+                tel = result[0:13]
+                email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
+                if email:
+                    email = email[0]
+                else:
+                    email=''
+                fax=result[44:57]
+                website = re.search('_blank">(.*)</a><br />', result)
+                if website:
+                    website = website.group(1)
+                else:
+                    website=''
+                #print(result, tel)
+
+                contact=[email,tel,fax,website]
+
 
                 job = indv_doc.xpath('//table//tr[6]/td[2]/text()')
                 if job:
@@ -164,7 +241,7 @@ def get_indv(page,df,fe_flag,n):
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
-                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], '', contact[0], contact[0], contact[0], contact[0], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
+                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], '', contact[0], contact[1], contact[2], contact[3], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
 
                 now = datetime.now()
                 dts = now.strftime("%d/%m/%Y %H:%M")
