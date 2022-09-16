@@ -5,25 +5,34 @@ import pandas as pd
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import load_workbook
 import os.path
+from datetime import datetime
 
 zip_lang = 'zip_language.xlsx'
 df = pd.read_excel(zip_lang)
 base_url = 'https://www.sia.ch/'
-page=0
-n=0
+page = input('Enter Page number to Start: ')
+n = input('Enter Row number to Start: ')
 file_exists = os.path.exists('member.xlsx')
+
+page = int(page)-1
+n = int(n)-1
 if file_exists:
-    wb = load_workbook(filename = "member.xlsx")
-    ws = wb["member"]
-    print('file found deleting old data')
-    ws.delete_rows(2,ws.max_row+1)
-    wb.save("member.xlsx")
+    deleteData = input('Want to delete old Data (y/n): ')
+    if (str(deleteData))=='y':
+        wb = load_workbook(filename = "member.xlsx")
+        ws = wb["member"]
+        mo_ws = wb['member_office']
+        print('File found deleting old data')
+        ws.delete_rows(2,ws.max_row+1)
+        mo_ws.delete_rows(2,mo_ws.max_row+1)
+        wb.save("member.xlsx")
     fe_flag = 1
 else:
     fe_flag = 0
 
 def get_indv(page,df,fe_flag,n):
     ids = n
+    row = n+2
     url = base_url +'fr/affiliation/liste-des-membres/membres-individuels/nc/1/?tx_updsiafeuseradmin_pi1%5BdisplaySearchResult%5D=1&tx_updsiafeuseradmin_pi1%5Bpointer%5D='
     while url:
         page_url = url + str(page)
@@ -77,26 +86,41 @@ def get_indv(page,df,fe_flag,n):
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
-                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, contact[0], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "CONTACT", "JOB", "SECTOR", "GROUP", "SECTION"])
+                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, contact[0], contact[0], contact[0], contact[0], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
+
+                now = datetime.now()
+                dts = now.strftime("%d/%m/%Y %H:%M")
+                mo_wdf = pd.DataFrame([[ids+1, ids+1, '', dts]], columns=["ID","MEMBER_ID", "OFFICE_ID", "COLLECTED_AT"])
+
+                office_wdf = pd.DataFrame(columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
                 #with pd.ExcelWriter("member.xlsx") as writer:
                     #wdf.to_excel(writer, sheet_name='member', index=False)
                 #print(wdf)
                 if fe_flag==1:
                     wb = load_workbook(filename = "member.xlsx")
                     ws = wb["member"]
+                    mows = wb["member_office"]
                     for r in dataframe_to_rows(wdf, index=False, header=False):
                         ws.append(r)
+                    mows.cell(row=int(row), column=1).value = ids+1
+                    mows.cell(row=int(row), column=2).value = ids+1
+                    mows.cell(row=int(row), column=4).value = dts
+                    #for mo in dataframe_to_rows(mo_wdf, index=False, header=False):
+                        #mows.append(mo)
+
                     wb.save("member.xlsx")
                     wb.close
                     print("Saving info of page: " + str(page+1) +"  member: " + str(n+1) +" in excel")
                 else:
                     with pd.ExcelWriter("member.xlsx") as writer:
                         wdf.to_excel(writer, sheet_name='member', index=False)
+                        mo_wdf.to_excel(writer, sheet_name='member_office', index=False)
+                        office_wdf.to_excel(writer, sheet_name='office', index=False)
                     print('Creating New Excel')
                     fe_flag=1
                     print("Saving info of page: " + str(page+1) +"  member: " + str(n+1) +" in excel")
-
-
+                row+=1
+                
             else: #if zip not found
                 indv_lang = 'FR'
                 indv_mem_url = doc.xpath('//table//a/@href')[n]
@@ -140,25 +164,42 @@ def get_indv(page,df,fe_flag,n):
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
-                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], '', contact[0], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "CONTACT", "JOB", "SECTOR", "GROUP", "SECTION"])
+                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], '', contact[0], contact[0], contact[0], contact[0], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
+
+                now = datetime.now()
+                dts = now.strftime("%d/%m/%Y %H:%M")
+                mo_wdf = pd.DataFrame(columns=["ID","MEMBER_ID", "OFFICE_ID", "COLLECTED_AT"])
+
+                office_wdf = pd.DataFrame(columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
                 #with pd.ExcelWriter("member.xlsx") as writer:
                     #wdf.to_excel(writer, sheet_name='member', index=False)
                 #print(wdf)
                 if fe_flag==1:
                     wb = load_workbook(filename = "member.xlsx")
                     ws = wb["member"]
+                    mows = wb["member_office"]
+
                     for r in dataframe_to_rows(wdf, index=False, header=False):
                         ws.append(r)
+                    mows.cell(row=int(row), column=1).value = ids+1
+                    mows.cell(row=int(row), column=2).value = ids+1
+                    mows.cell(row=int(row), column=4).value = dts
+                    #for mo in dataframe_to_rows(mo_wdf, index=False, header=False):
+                        #mows.append(mo)
+
                     wb.save("member.xlsx")
                     wb.close
                     print("Saving info of page: " + str(page+1) +"  member: " + str(n+1) +" in excel")
                 else:
                     with pd.ExcelWriter("member.xlsx") as writer:
                         wdf.to_excel(writer, sheet_name='member', index=False)
+                        mo_wdf.to_excel(writer, sheet_name='member_office', index=False)
+                        office_wdf.to_excel(writer, sheet_name='office', index=False)
                     print('Creating New Excel')
                     fe_flag=1
                     print("Saving info of page: " + str(page+1) +"  member: " + str(n+1) +" in excel")
-                ids+=1
+                row+=1
+            ids+=1
             n+=1
         page=page+1
         n=0
