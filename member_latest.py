@@ -20,6 +20,8 @@ file_exists = os.path.exists('member.xlsx')
 
 page = int(page)-1
 n = int(n)-1
+ids = n + (50*page)
+
 if file_exists:
     deleteData = input('Want to delete old Data (y/n): ')
     if (str(deleteData))=='y':
@@ -48,8 +50,7 @@ def kdf(pwd, keySize):
         key = (key + key)[:keySize]
     return key
 
-def get_indv(page,df,fe_flag,n):
-    ids = n
+def get_indv(page,df,fe_flag,n,ids):
     row = n+2
     url = base_url +'fr/affiliation/liste-des-membres/membres-individuels/nc/1/?tx_updsiafeuseradmin_pi1%5BdisplaySearchResult%5D=1&tx_updsiafeuseradmin_pi1%5Bpointer%5D='
     while url:
@@ -92,21 +93,29 @@ def get_indv(page,df,fe_flag,n):
                 aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
                 res = aes.decrypt(data)
                 result = res.decode('utf-8')
-                tel = result[0:13]
+                #tel = result[0:13]
                 email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
                 if email:
                     email = email[0]
                 else:
                     email=''
-                fax=result[44:57]
+                phone_fax=re.findall(r"(\+\d\d\s*\d(?:\d)+)",result)
+                if phone_fax and len(phone_fax)==2:
+                    tel = phone_fax[0]
+                    fax = phone_fax[1]
+                elif phone_fax and len(phone_fax)==1:
+                    tel = phone_fax[0]
+                    fax = ''
+                else:
+                    tel = ''
+                    fax = ''
+
                 website = re.search('_blank">(.*)</a><br />', result)
                 if website:
                     website = website.group(1)
                 else:
                     website=''
                 #print(result, tel)
-
-                contact=[email,tel,fax,website]
 
                 job = indv_doc.xpath('//table//tr[6]/td[2]/text()')
                 if job:
@@ -133,7 +142,7 @@ def get_indv(page,df,fe_flag,n):
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
-                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, contact[0], contact[1], contact[2], contact[2], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
+                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, email, tel, fax, website, job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
 
                 now = datetime.now()
                 dts = now.strftime("%d/%m/%Y %H:%M")
@@ -198,13 +207,22 @@ def get_indv(page,df,fe_flag,n):
                 aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
                 res = aes.decrypt(data)
                 result = res.decode('utf-8')
-                tel = result[0:13]
+                #tel = result[0:13]
                 email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
                 if email:
                     email = email[0]
                 else:
                     email=''
-                fax=result[44:57]
+                phone_fax=re.findall(r"(\+\d\d\s*\d(?:\d)+)",result)
+                if phone_fax and len(phone_fax)==2:
+                    tel = phone_fax[0]
+                    fax = phone_fax[1]
+                elif phone_fax and len(phone_fax)==1:
+                    tel = phone_fax[0]
+                    fax = ''
+                else:
+                    tel = ''
+                    fax = ''
                 website = re.search('_blank">(.*)</a><br />', result)
                 if website:
                     website = website.group(1)
@@ -212,7 +230,7 @@ def get_indv(page,df,fe_flag,n):
                     website=''
                 #print(result, tel)
 
-                contact=[email,tel,fax,website]
+                #contact=[email,tel,fax,website]
 
 
                 job = indv_doc.xpath('//table//tr[6]/td[2]/text()')
@@ -241,7 +259,7 @@ def get_indv(page,df,fe_flag,n):
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
-                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], '', contact[0], contact[1], contact[2], contact[3], job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
+                wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], '', email, tel, fax, website, job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
 
                 now = datetime.now()
                 dts = now.strftime("%d/%m/%Y %H:%M")
@@ -287,4 +305,4 @@ def clean_list(list2clean):
         clean_list.append(element.strip())
     return list(filter(lambda e: e != '', clean_list))
 
-print(get_indv(page,df,fe_flag,n))
+print(get_indv(page,df,fe_flag,n,ids))

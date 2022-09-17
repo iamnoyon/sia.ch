@@ -18,6 +18,7 @@ n = input('Enter Row number to Start: ')
 file_exists = os.path.exists('member.xlsx')
 page = int(page)-1
 n = int(n)-1
+ids = n + (50*page)
 if file_exists:
     deleteData = input('Want to delete old Data (y/n): ')
     if (str(deleteData))=='y':
@@ -47,8 +48,7 @@ def kdf(pwd, keySize):
         key = (key + key)[:keySize]
     return key
 
-def get_indv(page,df,fe_flag,n):
-    ids = n
+def get_indv(page,df,fe_flag,n,ids):
     row=n+2
     office_url = base_url +'fr/membership/member-directory/corporate-members/nc/1/?tx_updsiafeuseradmin_pi1%5BdisplaySearchResult%5D=1&tx_updsiafeuseradmin_pi1%5Bpointer%5D='
     while office_url:
@@ -99,13 +99,22 @@ def get_indv(page,df,fe_flag,n):
                 aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
                 res = aes.decrypt(data)
                 result = res.decode('utf-8')
-                tel = result[0:13]
+                #tel = result[0:13]
                 email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
                 if email:
                     email = email[0]
                 else:
                     email=''
-                fax=result[44:57]
+                phone_fax=re.findall(r"(\+\d\d\s*\d(?:\d)+)",result)
+                if phone_fax and len(phone_fax)==2:
+                    tel = phone_fax[0]
+                    fax = phone_fax[1]
+                elif phone_fax and len(phone_fax)==1:
+                    tel = phone_fax[0]
+                    fax = ''
+                else:
+                    tel = ''
+                    fax = ''
                 website = re.search('_blank">(.*)</a><br />', result)
                 if website:
                     website = website.group(1)
@@ -113,7 +122,7 @@ def get_indv(page,df,fe_flag,n):
                     website=''
                 #print(result, tel)
 
-                contact=[tel,email,fax,website]
+                #contact=[tel,email,fax,website]
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
                 wdf = pd.DataFrame(columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "CONTACT", "JOB", "SECTOR", "GROUP", "SECTION"])
@@ -122,7 +131,7 @@ def get_indv(page,df,fe_flag,n):
                 dts = now.strftime("%d/%m/%Y %H:%M")
                 mo_wdf = pd.DataFrame([[ids+1,'',ids+1,dts]], columns=["ID","MEMBER_ID", "OFFICE_ID", "COLLECTED_AT"])
 
-                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], office_indv_zip, contact[1],contact[0],contact[2],contact[3],office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
+                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], office_indv_zip, email,tel,fax,website,office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
                 #with pd.ExcelWriter("member.xlsx") as writer:
                     #wdf.to_excel(writer, sheet_name='member', index=False)
                 #print(wdf)
@@ -186,13 +195,22 @@ def get_indv(page,df,fe_flag,n):
                 aes = AES.new(key=key, mode=AES.MODE_CTR, nonce=nc) 
                 res = aes.decrypt(data)
                 result = res.decode('utf-8')
-                tel = result[0:13]
+                #tel = result[0:13]
                 email = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', result)
                 if email:
                     email = email[0]
                 else:
                     email=''
-                fax=result[44:57]
+                phone_fax=re.findall(r"(\+\d\d\s*\d(?:\d)+)",result)
+                if phone_fax and len(phone_fax)==2:
+                    tel = phone_fax[0]
+                    fax = phone_fax[1]
+                elif phone_fax and len(phone_fax)==1:
+                    tel = phone_fax[0]
+                    fax = ''
+                else:
+                    tel = ''
+                    fax = ''
                 website = re.search('_blank">(.*)</a><br />', result)
                 if website:
                     website = website.group(1)
@@ -200,7 +218,7 @@ def get_indv(page,df,fe_flag,n):
                     website=''
                 #print(result, tel)
 
-                contact=[tel,email,fax,website]
+                #contact=[tel,email,fax,website]
 
                 #print(join_indv_full_address_clean, contact)
                 #print(job, sector, group, section)
@@ -210,7 +228,7 @@ def get_indv(page,df,fe_flag,n):
                 dts = now.strftime("%d/%m/%Y %H:%M")
                 mo_wdf = pd.DataFrame([[ids+1,'',ids+1,dts]], columns=["ID","MEMBER_ID", "OFFICE_ID", "COLLECTED_AT"])
 
-                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], '', contact[0],contact[1],contact[2],contact[3],office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
+                office_wdf = pd.DataFrame([[ids+1, indv_office_url_lang, office_indv_lang, join_indv_office_full_address_clean,indv_office_full_address_clean[0], indv_office_full_address_clean[1], indv_office_full_address_clean[2], '', email,tel,fax,website,office_sector]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "NAME", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "SECTOR"])
                 #with pd.ExcelWriter("member.xlsx") as writer:
                     #wdf.to_excel(writer, sheet_name='member', index=False)
                 #print(wdf)
@@ -246,4 +264,4 @@ def clean_list(list2clean):
         clean_list.append(element.strip())
     return list(filter(lambda e: e != '', clean_list))
 
-print(get_indv(page,df,fe_flag,n))
+print(get_indv(page,df,fe_flag,n,ids))
