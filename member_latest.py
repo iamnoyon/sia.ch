@@ -21,6 +21,13 @@ file_exists = os.path.exists('member.xlsx')
 page = int(page)-1
 n = int(n)-1
 ids = n + (50*page)
+rowc = n+2
+def empty_cell_counter(mo_ws):
+    ec_count = 0
+    for x in mo_ws['B']:
+        if x.value is None:
+            ec_count+=1
+    return ec_count
 
 if file_exists:
     deleteData = input('Want to delete old Data (y/n): ')
@@ -32,10 +39,23 @@ if file_exists:
         ws.delete_rows(2,ws.max_row+1)
         mo_ws.delete_rows(2,mo_ws.max_row+1)
         wb.save("member.xlsx")
-    fe_flag = 1
+        fe_flag = 1
+    elif (str(deleteData))=='n':
+        wb = load_workbook(filename = "member.xlsx")
+        mo_ws = wb['member_office']
+        #print(len(mo_ws['B']), len(mo_ws['C']))
+        temp = empty_cell_counter(mo_ws)
+        #print(temp)
+        rowc=len(mo_ws['B'])-temp+1
+        #for row in mo_ws.iter_rows():
+            #for cell in row:
+                #if cell.value == int(ids):
+                    #rowc=row[0].value+1
+                    #break
+        fe_flag=1
 else:
     fe_flag = 0
-
+#decryption
 def pad(data, ks):
     pad_len = (ks - (len(data) % ks)) % ks 
     return data + (b'\x00' * pad_len)
@@ -50,8 +70,7 @@ def kdf(pwd, keySize):
         key = (key + key)[:keySize]
     return key
 
-def get_indv(page,df,fe_flag,n,ids):
-    row = n+2
+def get_indv(page,df,fe_flag,n,ids,rowc):
     url = base_url +'fr/affiliation/liste-des-membres/membres-individuels/nc/1/?tx_updsiafeuseradmin_pi1%5BdisplaySearchResult%5D=1&tx_updsiafeuseradmin_pi1%5Bpointer%5D='
     while url:
         page_url = url + str(page)
@@ -158,9 +177,9 @@ def get_indv(page,df,fe_flag,n,ids):
                     mows = wb["member_office"]
                     for r in dataframe_to_rows(wdf, index=False, header=False):
                         ws.append(r)
-                    mows.cell(row=int(row), column=1).value = ids+1
-                    mows.cell(row=int(row), column=2).value = ids+1
-                    mows.cell(row=int(row), column=4).value = dts
+                    mows.cell(row=int(rowc), column=1).value = ids+1
+                    mows.cell(row=int(rowc), column=2).value = ids+1
+                    mows.cell(row=int(rowc), column=4).value = dts
                     #for mo in dataframe_to_rows(mo_wdf, index=False, header=False):
                         #mows.append(mo)
 
@@ -175,7 +194,7 @@ def get_indv(page,df,fe_flag,n,ids):
                     print('Creating New Excel')
                     fe_flag=1
                     print("Saving info of page: " + str(page+1) +"  member: " + str(n+1) +" in excel")
-                row+=1
+                rowc+=1
                 
             else: #if zip not found
                 indv_lang = 'FR'
@@ -276,9 +295,9 @@ def get_indv(page,df,fe_flag,n,ids):
 
                     for r in dataframe_to_rows(wdf, index=False, header=False):
                         ws.append(r)
-                    mows.cell(row=int(row), column=1).value = ids+1
-                    mows.cell(row=int(row), column=2).value = ids+1
-                    mows.cell(row=int(row), column=4).value = dts
+                    mows.cell(row=int(rowc), column=1).value = ids+1
+                    mows.cell(row=int(rowc), column=2).value = ids+1
+                    mows.cell(row=int(rowc), column=4).value = dts
                     #for mo in dataframe_to_rows(mo_wdf, index=False, header=False):
                         #mows.append(mo)
 
@@ -293,7 +312,7 @@ def get_indv(page,df,fe_flag,n,ids):
                     print('Creating New Excel')
                     fe_flag=1
                     print("Saving info of page: " + str(page+1) +"  member: " + str(n+1) +" in excel")
-                row+=1
+                rowc+=1
             ids+=1
             n+=1
         page=page+1
@@ -305,4 +324,4 @@ def clean_list(list2clean):
         clean_list.append(element.strip())
     return list(filter(lambda e: e != '', clean_list))
 
-print(get_indv(page,df,fe_flag,n,ids))
+print(get_indv(page,df,fe_flag,n,ids,rowc))
