@@ -104,8 +104,16 @@ def get_indv(page,df,fe_flag,n,ids,rowc):
                     office_sector = ''
 
                 #***implement later
-                data_contact = indv_office_doc.xpath('//@data-contact')[0]
-                data_secret = indv_office_doc.xpath('//@data-secr')[0]
+                data_contact = indv_office_doc.xpath('//@data-contact')
+                if data_contact:
+                    data_contact=data_contact[0]
+                else:
+                    data_contact=''
+                data_secret = indv_office_doc.xpath('//@data-secr')
+                if data_secret:
+                    data_secret=data_secret[0]
+                else:
+                    data_secret = ''
                 #print(data_contact[0])
                 #print(data_secret[0])
 
@@ -178,9 +186,9 @@ def get_indv(page,df,fe_flag,n,ids,rowc):
                 rowc+=1
 
             else: #if zip not found
-                indv_lang = 'FR'
+                office_indv_lang = 'FR'
                 indv_office_url = office_doc.xpath('//table//td[1]//a/@href')[n]
-                indv_office_url_lang = base_url + indv_office_url.replace("/fr/", str(indv_lang).lower() + '/' ) #member url with language
+                indv_office_url_lang = base_url + indv_office_url.replace("/fr/", str(office_indv_lang).lower() + '/' ) #member url with language
 
 
                 indv_office_html = requests.get(indv_office_url_lang) #request by mem_url
@@ -200,8 +208,16 @@ def get_indv(page,df,fe_flag,n,ids,rowc):
                     office_sector = ''
 
                 #***implement later
-                data_contact = indv_office_doc.xpath('//@data-contact')[0]
-                data_secret = indv_office_doc.xpath('//@data-secr')[0]
+                data_contact = indv_office_doc.xpath('//@data-contact')
+                if data_contact:
+                    data_contact=data_contact[0]
+                else:
+                    data_contact=''
+                data_secret = indv_office_doc.xpath('//@data-secr')
+                if data_secret:
+                    data_secret=data_secret[0]
+                else:
+                    data_secret = ''
                 #print(data_contact[0])
                 #print(data_secret[0])
 
