@@ -97,8 +97,16 @@ def get_indv(page,df,fe_flag,n,ids,rowc):
                 join_indv_full_address_clean = " ".join(indv_full_address_clean)
                 
                 #***implement later
-                data_contact = indv_doc.xpath('//@data-contact')[0]
-                data_secret = indv_doc.xpath('//@data-secr')[0]
+                data_contact = indv_doc.xpath('//@data-contact')
+                if data_contact:
+                    data_contact=data_contact[0]
+                else:
+                    data_contact=''
+                data_secret = indv_doc.xpath('//@data-secr')
+                if data_secret:
+                    data_secret=data_secret[0]
+                else:
+                    data_secret = ''
                 #print(data_contact[0])
                 #print(data_secret[0])
 
@@ -160,7 +168,7 @@ def get_indv(page,df,fe_flag,n,ids,rowc):
                     section=['']
 
                 #print(join_indv_full_address_clean, contact)
-                #print(job, sector, group, section)
+                #print(job, sector, group  , section)
                 wdf = pd.DataFrame([[ids+1, indv_mem_url_lang, indv_lang, join_indv_full_address_clean,indv_full_address_clean[0], indv_full_address_clean[1], indv_full_address_clean[2], indv_full_address_clean[3], indv_full_address_clean[4], indv_zip, email, tel, fax, website, job[0], sector[0], group[0], section[0]]], columns=["ID","URL", "LANGUGE", "FULL_ADDRESS", "GENDER", "NAME", "EDUCATION", "ADDRESS", "CITY", "ZIP_CODE", "EMAIL", "TEL", "FAX", "WEBSITE", "JOB", "SECTOR", "GROUP", "SECTION"])
 
                 now = datetime.now()
@@ -211,8 +219,16 @@ def get_indv(page,df,fe_flag,n,ids,rowc):
                 join_indv_full_address_clean = " ".join(indv_full_address_clean)
 
                 #***implement later
-                data_contact = indv_doc.xpath('//@data-contact')[0]
-                data_secret = indv_doc.xpath('//@data-secr')[0]
+                data_contact = indv_doc.xpath('//@data-contact')
+                if data_contact:
+                    data_contact=data_contact[0]
+                else:
+                    data_contact=''
+                data_secret = indv_doc.xpath('//@data-secr')
+                if data_secret:
+                    data_secret=data_secret[0]
+                else:
+                    data_secret = ''
                 #print(data_contact[0])
                 #print(data_secret[0])
 
